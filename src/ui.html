@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>/* __INLINE_CSS__ */</style>
+</head>
+<body>
+  <div id="app">
+    <!-- Step 1: Selection status -->
+    <div id="step-selection" class="step">
+      <div class="step-header">
+        <span class="step-number">1</span>
+        <span>Select a banner template</span>
+      </div>
+      <div id="selection-status" class="status status--warning">
+        Select a frame in Figma to use as your banner template.
+      </div>
+      <div id="text-layers-preview" class="hidden"></div>
+    </div>
+
+    <!-- Step 2: CSV Upload -->
+    <div id="step-csv" class="step disabled">
+      <div class="step-header">
+        <span class="step-number">2</span>
+        <span>Upload CSV</span>
+      </div>
+      <div class="upload-area" id="upload-area">
+        <input type="file" id="csv-input" accept=".csv,.tsv,.txt" />
+        <label for="csv-input" class="upload-label">
+          <span class="upload-icon">+</span>
+          <span>Choose CSV file</span>
+        </label>
+        <div id="csv-info" class="hidden"></div>
+      </div>
+    </div>
+
+    <!-- Step 3: Mapping -->
+    <div id="step-mapping" class="step disabled">
+      <div class="step-header">
+        <span class="step-number">3</span>
+        <span>Map columns to layers</span>
+      </div>
+      <div id="mapping-container"></div>
+    </div>
+
+    <!-- Step 4: Generate -->
+    <div id="step-generate" class="step disabled">
+      <div class="step-header">
+        <span class="step-number">4</span>
+        <span>Generate variations</span>
+      </div>
+      <div class="generate-controls">
+        <button id="btn-generate" class="btn btn--primary" disabled>
+          Generate Banners
+        </button>
+        <div id="generate-status" class="hidden"></div>
+      </div>
+    </div>
+
+    <!-- Step 5: Export -->
+    <div id="step-export" class="step disabled">
+      <div class="step-header">
+        <span class="step-number">5</span>
+        <span>Export</span>
+      </div>
+      <div class="export-controls">
+        <select id="export-format">
+          <option value="PNG">PNG</option>
+          <option value="JPG">JPG</option>
+        </select>
+        <select id="export-scale">
+          <option value="1">1x</option>
+          <option value="2" selected>2x</option>
+          <option value="3">3x</option>
+        </select>
+        <button id="btn-export" class="btn btn--secondary">
+          Export All
+        </button>
+      </div>
+      <div id="export-status" class="hidden"></div>
+    </div>
+  </div>
+  <script>/* __INLINE_JS__ */</script>
+</body>
+</html>

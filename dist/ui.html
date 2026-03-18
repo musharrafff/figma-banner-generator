@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: Inter, system-ui, -apple-system, sans-serif;
+  font-size: 12px;
+  color: #333;
+  background: #fff;
+  padding: 12px;
+}
+
+.step {
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.step:last-child { border-bottom: none; }
+
+.step.disabled { opacity: 0.4; pointer-events: none; }
+
+.step-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.step-number {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #7c3aed;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.status {
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.status--warning { background: #fef3c7; color: #92400e; }
+.status--success { background: #d1fae5; color: #065f46; }
+.status--info { background: #dbeafe; color: #1e40af; }
+
+.hidden { display: none !important; }
+
+/* Text layer preview */
+#text-layers-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.layer-tag {
+  background: #f3f4f6;
+  border-radius: 4px;
+  padding: 3px 8px;
+  font-size: 11px;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.layer-preview {
+  color: #9ca3af;
+  font-style: italic;
+}
+
+/* Upload */
+.upload-area { margin-top: 4px; }
+
+input[type="file"] { display: none; }
+
+.upload-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 2px dashed #d1d5db;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 12px;
+  color: #6b7280;
+  transition: border-color 0.15s;
+}
+
+.upload-label:hover { border-color: #7c3aed; color: #7c3aed; }
+
+.upload-icon {
+  font-size: 18px;
+  font-weight: 300;
+  line-height: 1;
+}
+
+/* Mapping */
+.mapping-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.mapping-layer {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mapping-arrow {
+  color: #9ca3af;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.mapping-select {
+  flex: 1;
+  padding: 5px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 12px;
+  font-family: inherit;
+  background: #fff;
+}
+
+.mapping-select:focus {
+  outline: none;
+  border-color: #7c3aed;
+  box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.15);
+}
+
+/* Buttons */
+.btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn--primary { background: #7c3aed; color: white; }
+.btn--primary:hover:not(:disabled) { background: #6d28d9; }
+
+.btn--secondary { background: #f3f4f6; color: #333; }
+.btn--secondary:hover:not(:disabled) { background: #e5e7eb; }
+
+/* Generate / Export controls */
+.generate-controls, .export-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.export-controls select {
+  padding: 5px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 12px;
+  font-family: inherit;
+  background: #fff;
+}
+</style>
+</head>
+<body>
+  <div id="app">
+    <!-- Step 1: Selection status -->
+    <div id="step-selection" class="step">
+      <div class="step-header">
+        <span class="step-number">1</span>
+        <span>Select a banner template</span>
+      </div>
+      <div id="selection-status" class="status status--warning">
+        Select a frame in Figma to use as your banner template.
+      </div>
+      <div id="text-layers-preview" class="hidden"></div>
+    </div>
+
+    <!-- Step 2: CSV Upload -->
+    <div id="step-csv" class="step disabled">
+      <div class="step-header">
+        <span class="step-number">2</span>
+        <span>Upload CSV</span>
+      </div>
+      <div class="upload-area" id="upload-area">
+        <input type="file" id="csv-input" accept=".csv,.tsv,.txt" />
+        <label for="csv-input" class="upload-label">
+          <span class="upload-icon">+</span>
+          <span>Choose CSV file</span>
+        </label>
+        <div id="csv-info" class="hidden"></div>
+      </div>
+    </div>
+
+    <!-- Step 3: Mapping -->
+    <div id="step-mapping" class="step disabled">
+      <div class="step-header">
+        <span class="step-number">3</span>
+        <span>Map columns to layers</span>
+      </div>
+      <div id="mapping-container"></div>
+    </div>
+
+    <!-- Step 4: Generate -->
+    <div id="step-generate" class="step disabled">
+      <div class="step-header">
+        <span class="step-number">4</span>
+        <span>Generate variations</span>
+      </div>
+      <div class="generate-controls">
+        <button id="btn-generate" class="btn btn--primary" disabled>
+          Generate Banners
+        </button>
+        <div id="generate-status" class="hidden"></div>
+      </div>
+    </div>
+
+    <!-- Step 5: Export -->
+    <div id="step-export" class="step disabled">
+      <div class="step-header">
+        <span class="step-number">5</span>
+        <span>Export</span>
+      </div>
+      <div class="export-controls">
+        <select id="export-format">
+          <option value="PNG">PNG</option>
+          <option value="JPG">JPG</option>
+        </select>
+        <select id="export-scale">
+          <option value="1">1x</option>
+          <option value="2" selected>2x</option>
+          <option value="3">3x</option>
+        </select>
+        <button id="btn-export" class="btn btn--secondary">
+          Export All
+        </button>
+      </div>
+      <div id="export-status" class="hidden"></div>
+    </div>
+  </div>
+  <script>"use strict";
+(() => {
+  var __getOwnPropNames = Object.getOwnPropertyNames;
+  var __commonJS = (cb, mod) => function __require() {
+    return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
+  };
+
+  // src/ui.ts
+  var require_ui = __commonJS({
+    "src/ui.ts"() {
+      function parseCSV(text) {
+        const lines = [];
+        let current = "";
+        let inQuotes = false;
+        for (let i = 0; i < text.length; i++) {
+          const char = text[i];
+          if (char === '"') {
+            if (inQuotes && text[i + 1] === '"') {
+              current += '"';
+              i++;
+            } else {
+              inQuotes = !inQuotes;
+            }
+          } else if ((char === "\n" || char === "\r") && !inQuotes) {
+            if (current.trim()) lines.push(current);
+            current = "";
+            if (char === "\r" && text[i + 1] === "\n") i++;
+          } else {
+            current += char;
+          }
+        }
+        if (current.trim()) lines.push(current);
+        if (lines.length < 2) return [];
+        const splitRow = (line) => {
+          const fields = [];
+          let field = "";
+          let inQ = false;
+          for (let i = 0; i < line.length; i++) {
+            const c = line[i];
+            if (c === '"') {
+              if (inQ && line[i + 1] === '"') {
+                field += '"';
+                i++;
+              } else {
+                inQ = !inQ;
+              }
+            } else if (c === "," && !inQ) {
+              fields.push(field.trim());
+              field = "";
+            } else {
+              field += c;
+            }
+          }
+          fields.push(field.trim());
+          return fields;
+        };
+        const headers = splitRow(lines[0]);
+        const rows = [];
+        for (let i = 1; i < lines.length; i++) {
+          const values = splitRow(lines[i]);
+          const row = {};
+          headers.forEach((header, idx) => {
+            row[header] = values[idx] || "";
+          });
+          rows.push(row);
+        }
+        return rows;
+      }
+      function downloadImages(images, format) {
+        if (images.length === 1) {
+          const blob = new Blob([new Uint8Array(images[0].bytes)], {
+            type: format === "PNG" ? "image/png" : "image/jpeg"
+          });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = images[0].name;
+          a.click();
+          URL.revokeObjectURL(url);
+          return;
+        }
+        for (const img of images) {
+          const blob = new Blob([new Uint8Array(img.bytes)], {
+            type: format === "PNG" ? "image/png" : "image/jpeg"
+          });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = img.name;
+          a.click();
+          URL.revokeObjectURL(url);
+        }
+      }
+      var textLayers = [];
+      var csvHeaders = [];
+      var csvData = [];
+      var mapping = {};
+      var $ = (id) => document.getElementById(id);
+      function show(id) {
+        $(id).classList.remove("hidden");
+      }
+      function hide(id) {
+        $(id).classList.add("hidden");
+      }
+      function enable(id) {
+        $(id).classList.remove("disabled");
+      }
+      function disable(id) {
+        $(id).classList.add("disabled");
+      }
+      function updateSelection(layers) {
+        textLayers = layers;
+        const status = $("selection-status");
+        status.className = "status status--success";
+        status.textContent = `Found ${layers.length} text layer${layers.length > 1 ? "s" : ""}.`;
+        const preview = $("text-layers-preview");
+        preview.innerHTML = layers.map((l) => `<div class="layer-tag">${l.name}<span class="layer-preview">${l.characters.substring(0, 30)}${l.characters.length > 30 ? "..." : ""}</span></div>`).join("");
+        show("text-layers-preview");
+        enable("step-csv");
+        if (csvData.length > 0) {
+          buildMapping();
+        }
+      }
+      function showSelectionError(error) {
+        textLayers = [];
+        const status = $("selection-status");
+        status.className = "status status--warning";
+        status.textContent = error;
+        hide("text-layers-preview");
+        disable("step-csv");
+        disable("step-mapping");
+        disable("step-generate");
+        disable("step-export");
+      }
+      $("csv-input").addEventListener("change", (e) => {
+        const input = e.target;
+        const file = input.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const text = event.target?.result;
+          csvData = parseCSV(text);
+          if (csvData.length === 0) {
+            const info2 = $("csv-info");
+            info2.textContent = "No data rows found in CSV.";
+            info2.className = "status status--warning";
+            show("csv-info");
+            return;
+          }
+          csvHeaders = Object.keys(csvData[0]);
+          const info = $("csv-info");
+          info.textContent = `${file.name} \u2014 ${csvData.length} rows, ${csvHeaders.length} columns`;
+          info.className = "status status--success";
+          show("csv-info");
+          buildMapping();
+        };
+        reader.readAsText(file);
+      });
+      function buildMapping() {
+        if (textLayers.length === 0 || csvHeaders.length === 0) return;
+        enable("step-mapping");
+        const container = $("mapping-container");
+        mapping = {};
+        const headerLower = csvHeaders.map((h) => h.toLowerCase().trim());
+        container.innerHTML = textLayers.map((layer) => {
+          const autoMatch = headerLower.indexOf(layer.name.toLowerCase().trim());
+          if (autoMatch !== -1) {
+            mapping[layer.id] = csvHeaders[autoMatch];
+          }
+          const options = csvHeaders.map(
+            (h) => `<option value="${h}" ${h === csvHeaders[autoMatch] ? "selected" : ""}>${h}</option>`
+          ).join("");
+          return `
+        <div class="mapping-row">
+          <span class="mapping-layer" title="${layer.characters}">${layer.name}</span>
+          <span class="mapping-arrow">&#8594;</span>
+          <select class="mapping-select" data-layer-id="${layer.id}">
+            <option value="">-- skip --</option>
+            ${options}
+          </select>
+        </div>
+      `;
+        }).join("");
+        container.querySelectorAll(".mapping-select").forEach((select) => {
+          select.addEventListener("change", (e) => {
+            const el = e.target;
+            const layerId = el.dataset.layerId;
+            if (el.value) {
+              mapping[layerId] = el.value;
+            } else {
+              delete mapping[layerId];
+            }
+            updateGenerateButton();
+          });
+        });
+        updateGenerateButton();
+      }
+      function updateGenerateButton() {
+        const hasMappings = Object.keys(mapping).length > 0;
+        enable("step-generate");
+        const btn = $("btn-generate");
+        btn.disabled = !hasMappings;
+        btn.textContent = `Generate ${csvData.length} Banner${csvData.length > 1 ? "s" : ""}`;
+      }
+      $("btn-generate").addEventListener("click", () => {
+        const btn = $("btn-generate");
+        btn.disabled = true;
+        btn.textContent = "Generating...";
+        const status = $("generate-status");
+        status.textContent = "Working...";
+        status.className = "status status--info";
+        show("generate-status");
+        parent.postMessage(
+          {
+            pluginMessage: {
+              type: "generate",
+              csvData,
+              mapping
+            }
+          },
+          "*"
+        );
+      });
+      $("btn-export").addEventListener("click", () => {
+        const status = $("export-status");
+        status.textContent = "Exporting...";
+        status.className = "status status--info";
+        show("export-status");
+        parent.postMessage(
+          {
+            pluginMessage: {
+              type: "export",
+              format: $("export-format").value,
+              scale: Number($("export-scale").value)
+            }
+          },
+          "*"
+        );
+      });
+      window.onmessage = (event) => {
+        const msg = event.data.pluginMessage;
+        if (msg.type === "selection-info") {
+          updateSelection(msg.textLayers);
+        }
+        if (msg.type === "selection-error") {
+          showSelectionError(msg.error);
+        }
+        if (msg.type === "generate-done") {
+          const btn = $("btn-generate");
+          btn.disabled = false;
+          btn.textContent = `Generate ${csvData.length} Banner${csvData.length > 1 ? "s" : ""}`;
+          const status = $("generate-status");
+          status.textContent = `Generated ${msg.count} banner${msg.count > 1 ? "s" : ""} successfully.`;
+          status.className = "status status--success";
+          enable("step-export");
+        }
+        if (msg.type === "generate-error") {
+          const btn = $("btn-generate");
+          btn.disabled = false;
+          btn.textContent = `Generate ${csvData.length} Banner${csvData.length > 1 ? "s" : ""}`;
+          const status = $("generate-status");
+          status.textContent = msg.error;
+          status.className = "status status--warning";
+        }
+        if (msg.type === "export-done") {
+          downloadImages(msg.imageData, $("export-format").value);
+          const status = $("export-status");
+          status.textContent = `Exported ${msg.count} image${msg.count > 1 ? "s" : ""}.`;
+          status.className = "status status--success";
+        }
+        if (msg.type === "export-error") {
+          const status = $("export-status");
+          status.textContent = msg.error;
+          status.className = "status status--warning";
+        }
+      };
+      parent.postMessage({ pluginMessage: { type: "request-selection" } }, "*");
+    }
+  });
+  require_ui();
+})();
+</script>
+</body>
+</html>
